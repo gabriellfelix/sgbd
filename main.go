@@ -51,7 +51,7 @@ func conectar_db(db_path string, quant_paginas int, quant_bytes_por_pagina int) 
 			}
 		}
 
-		criar_paginas(paginas_ativas)
+		criar_paginas(db_path, paginas_ativas)
 
 		fmt.Println("Banco de Dados Encontrado...")
 	}
@@ -76,7 +76,7 @@ func criar_db(db_path string, quant_paginas int, quant_bytes_por_pagina int) []i
 		path_comp := db_path + "/" + strconv.Itoa(i) + ".txt"
 
 		pagina, _ := os.OpenFile(path_comp, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0664)
-		pagina.WriteString(string_vetor)
+		pagina.WriteString(string_vetor[1 : len(string_vetor)-1])
 	}
 
 	esp_livre_paginas = make([]int, quant_paginas)
@@ -194,9 +194,46 @@ func inserir_registro1(db_path string, enderecos []int, quant_paginas int, quant
 
 }
 
-func criar_paginas(paginas_ativas []int) []*Pagina {
+func ler_conteudo_pagina(db_path string, pagina int) []string {
+	path_pg := db_path + "/" + strconv.Itoa(pagina) + ".txt"
 
-	return
+	vetor_bin, _ := ioutil.ReadFile(path_pg)
+
+	spl := func(c rune) bool {
+		return c == ' ' || c == '\n'
+	}
+
+	vetor_string := string(vetor_bin)
+	valores := strings.FieldsFunc(vetor_string, spl)
+
+	// var ocupacao []int
+
+	// for i:=0; i<5; i++{
+	// 	var elemento int
+	// 	fmt.Sscan(valores[i], &elemento)
+	// 	ocupacao = append(ocupacao, elemento)
+	// }
+
+	return valores
+}
+
+func ler_registros_mem(db_path string, pagina int) {
+	// path_pg := db_path+"/"+strconv.Itoa(pagina)+".txt"
+
+	conteudo := ler_conteudo_pagina(db_path, pagina)
+
+	fmt.Println(conteudo)
+	fmt.Println("primeira pos ", len(conteudo))
+
+}
+
+func criar_paginas(db_path string, paginas_ativas []int) {
+
+	for _, pg := range paginas_ativas {
+		ler_registros_mem(db_path, pg)
+		// fmt.Println(pg)
+	}
+
 }
 
 func main() {

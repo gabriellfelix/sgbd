@@ -194,7 +194,9 @@ func inserir_registro1(db_path string, enderecos []int, quant_paginas int, quant
 
 }
 
-func ler_conteudo_pagina(db_path string, pagina int) []string {
+func ler_conteudo_pagina(db_path string, pagina int) ([]int, []string) {
+	var ocupacao []int
+
 	path_pg := db_path + "/" + strconv.Itoa(pagina) + ".txt"
 
 	vetor_bin, _ := ioutil.ReadFile(path_pg)
@@ -206,6 +208,13 @@ func ler_conteudo_pagina(db_path string, pagina int) []string {
 	vetor_string := string(vetor_bin)
 	valores := strings.FieldsFunc(vetor_string, spl)
 
+	for i := 0; i < 5; i++ {
+		val_ocup, _ := strconv.Atoi(valores[i])
+		ocupacao = append(ocupacao, val_ocup)
+	}
+
+	registros := valores[5:]
+
 	// var ocupacao []int
 
 	// for i:=0; i<5; i++{
@@ -214,16 +223,20 @@ func ler_conteudo_pagina(db_path string, pagina int) []string {
 	// 	ocupacao = append(ocupacao, elemento)
 	// }
 
-	return valores
+	return ocupacao, registros
 }
 
 func ler_registros_mem(db_path string, pagina int) {
+
+	var ocupacao []int
+	var registros []string
+
 	// path_pg := db_path+"/"+strconv.Itoa(pagina)+".txt"
 
-	conteudo := ler_conteudo_pagina(db_path, pagina)
+	ocupacao, registros = ler_conteudo_pagina(db_path, pagina)
 
-	fmt.Println(conteudo)
-	fmt.Println("primeira pos ", len(conteudo))
+	fmt.Println("Ocupação ", ocupacao)
+	fmt.Println("Registros ", registros)
 
 }
 

@@ -11,7 +11,7 @@ import (
 type Registro struct {
 	pagina_id int
 	slot      int
-	size      int
+	tamanho   int
 	conteudo  string
 }
 
@@ -19,7 +19,7 @@ type Pagina struct {
 	id        int
 	registros []*Registro
 	prox      *Pagina
-	esp_disp  int
+	// esp_disp  int
 }
 
 func conectar_db(db_path string, quant_paginas int, quant_bytes_por_pagina int) ([]int, []int) {
@@ -215,35 +215,62 @@ func ler_conteudo_pagina(db_path string, pagina int) ([]int, []string) {
 
 	registros := valores[5:]
 
-	// var ocupacao []int
-
-	// for i:=0; i<5; i++{
-	// 	var elemento int
-	// 	fmt.Sscan(valores[i], &elemento)
-	// 	ocupacao = append(ocupacao, elemento)
-	// }
-
 	return ocupacao, registros
 }
 
-func ler_registros_mem(db_path string, pagina int) {
+func ler_registros_mem(db_path string, pagina int) []*Registro {
 
+	var registros []*Registro
 	var ocupacao []int
-	var registros []string
+	var valores_registros []string
+	valor_registro := ""
+	tamanho_registro := 0
 
 	// path_pg := db_path+"/"+strconv.Itoa(pagina)+".txt"
 
-	ocupacao, registros = ler_conteudo_pagina(db_path, pagina)
+	ocupacao, valores_registros = ler_conteudo_pagina(db_path, pagina)
 
 	fmt.Println("Ocupação ", ocupacao)
-	fmt.Println("Registros ", registros)
+	fmt.Println("valores_Registros ", valores_registros)
+
+	for idx, val := range ocupacao {
+
+		if val != -1 {
+			valor_registro += string(valores_registros[idx])
+			tamanho_registro += 1
+
+			if idx == 4 || ocupacao[idx+1] != val {
+
+				registro := Registro{
+					pagina_id: pagina,
+					slot:      val,
+					tamanho:   tamanho_registro,
+					conteudo:  valor_registro,
+				}
+
+				registros = append(registros, &registro)
+
+				// fmt.Print("idx ", idx)
+				// fmt.Print(", val ", val)
+				// fmt.Print(", reg ", registro.conteudo)
+				// fmt.Print(", pg ", registro.pagina_id)
+				// fmt.Print(", slot ", registro.slot)
+				// fmt.Println(", tamanho ", registro.tamanho)
+
+				valor_registro = ""
+				tamanho_registro = 0
+			}
+		}
+	}
+
+	return registros
 
 }
 
 func criar_paginas(db_path string, paginas_ativas []int) {
 
 	for _, pg := range paginas_ativas {
-		ler_registros_mem(db_path, pg)
+		registros_pg := ler_registros_mem(db_path, pg)
 		// fmt.Println(pg)
 	}
 

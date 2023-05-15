@@ -22,9 +22,10 @@ type Pagina struct {
 	// esp_disp  int
 }
 
-func conectar_db(db_path string, quant_paginas int, quant_bytes_por_pagina int) ([]int, []int) {
+func conectar_db(db_path string, quant_paginas int, quant_bytes_por_pagina int) ([]int, []*Pagina) {
 	// fmt.Println("Verificando a Existência do Banco de Dados...")
 
+	var paginas []*Pagina
 	paginas_ativas := []int{}
 	var esp_livre_paginas []int
 
@@ -51,12 +52,12 @@ func conectar_db(db_path string, quant_paginas int, quant_bytes_por_pagina int) 
 			}
 		}
 
-		criar_paginas(db_path, paginas_ativas)
+		paginas = criar_paginas(db_path, paginas_ativas)
 
 		fmt.Println("Banco de Dados Encontrado...")
 	}
 
-	return esp_livre_paginas, paginas_ativas
+	return esp_livre_paginas, paginas
 }
 
 func criar_db(db_path string, quant_paginas int, quant_bytes_por_pagina int) []int {
@@ -230,20 +231,20 @@ func ler_registros_mem(db_path string, pagina int) []*Registro {
 
 	ocupacao, valores_registros = ler_conteudo_pagina(db_path, pagina)
 
-	fmt.Println("Ocupação ", ocupacao)
-	fmt.Println("valores_Registros ", valores_registros)
+	// fmt.Println("Ocupação ", ocupacao)
+	// fmt.Println("valores_Registros ", valores_registros)
 
-	for idx, val := range ocupacao {
+	for idx, _ := range ocupacao {
 
-		if val != -1 {
+		if ocupacao[idx] != -1 {
 			valor_registro += string(valores_registros[idx])
 			tamanho_registro += 1
 
-			if idx == 4 || ocupacao[idx+1] != val {
+			if idx == 4 || ocupacao[idx+1] != ocupacao[idx] {
 
 				registro := Registro{
 					pagina_id: pagina,
-					slot:      val,
+					slot:      ocupacao[idx],
 					tamanho:   tamanho_registro,
 					conteudo:  valor_registro,
 				}
@@ -267,18 +268,33 @@ func ler_registros_mem(db_path string, pagina int) []*Registro {
 
 }
 
-func criar_paginas(db_path string, paginas_ativas []int) {
+func criar_paginas(db_path string, paginas_ativas []int) []*Pagina {
 
-	for _, pg := range paginas_ativas {
-		registros_pg := ler_registros_mem(db_path, pg)
-		// fmt.Println(pg)
+	var paginas []*Pagina
+
+	for idx, _ := range paginas_ativas {
+		registros_pg := ler_registros_mem(db_path, paginas_ativas[idx])
+		fmt.Println(registros_pg)
+
+		pagina := Pagina{
+			id: paginas_ativas[idx],
+			registros: registros_pg,
+			prox: nil,
+		}
+
+		paginas = append(paginas, &pagina)
 	}
 
+	for i := (len(paginas)-1); i>1; i--{
+		paginas[i-1].prox = paginas[i]
+	}
+
+	return paginas
 }
 
 func main() {
 	var esp_livre_paginas []int
-	var lista_paginas_utilizadas []int
+	var paginas_utilizadas []*Pagina
 
 	DB_PATH := "db"
 	QUANT_PAGINAS := 20
@@ -288,9 +304,17 @@ func main() {
 
 	// fmt.Println("Inicializando...")
 
-	esp_livre_paginas, lista_paginas_utilizadas = conectar_db(DB_PATH, QUANT_PAGINAS, QUANT_BYTES_POR_PAGINA)
+	esp_livre_paginas, paginas_utilizadas = conectar_db(DB_PATH, QUANT_PAGINAS, QUANT_BYTES_POR_PAGINA)
 
-	fmt.Println(esp_livre_paginas, lista_paginas_utilizadas)
+	fmt.Println(esp_livre_paginas)
+
+	for _, i := range paginas_utilizadas{
+		fmt.Println(i.id)
+
+		for _, reg := range i.registros{
+			fmt.Println(reg.conteudo)
+		}
+	}
 
 	// inserir_registro1(db_path, enderecos, QUANT_PAGINAS, QUANT_BYTES_POR_PAGINA)
 

@@ -348,50 +348,66 @@ func inserir_registro(db_path string, paginas_utilizadas *[]*Pagina, esp_livre_p
 
 }
 
-func scan(paginas_ativas []*Pagina) []string {
-	var RegistrosEncontrados []string
+func scan(paginas_ativas *[]*Pagina) ([]*Registro, string) {
+	var RegistrosEncontrados []*Registro
+	var log string
 
-	paginaAtual := paginas_ativas[0]
+	if len(*paginas_ativas) == 0 {
+		log = "Nenhum registro encontrado"
+		return RegistrosEncontrados, log
+	}
+	
+	paginaAtual := (*paginas_ativas)[0]
 
 	for {
 		if paginaAtual == nil {
 			break
 		}
-		for _, registro := range paginaAtual.registros {
-			RegistrosEncontrados = append(RegistrosEncontrados, registro.conteudo)
+		for _, registro := range (*paginaAtual).registros {
+			RegistrosEncontrados = append(RegistrosEncontrados, registro)
 		}
 		paginaAtual = paginaAtual.prox
 	}
 
-	return RegistrosEncontrados
+	log = "Número de registros encontrados: " + strconv.Itoa(len(RegistrosEncontrados))
+
+	return RegistrosEncontrados, log
 }
 
-func seek(paginas_ativas []*Pagina, valor_a_pesquisar string) []*Registro {
-	var valoresAretornar []*Registro
+func seek(paginas_ativas *[]*Pagina, valor_a_pesquisar string) ([]*Registro, string) {
+	var RegistrosAretornar []*Registro
+	var log string
 
-	paginaAtual := paginas_ativas[0]
+	if len(*paginas_ativas) == 0 {
+		log = "Nenhum registro encontrado"
+		return RegistrosAretornar, log
+	}
+
+	paginaAtual := (*paginas_ativas)[0]
+
 
 	for {
 		if paginaAtual == nil {
 			break
 		}
-		for _, registro := range paginaAtual.registros {
+		for _, registro := range (*paginaAtual).registros {
 			if registro.conteudo == valor_a_pesquisar {
-				valoresAretornar = append(valoresAretornar, registro)
+				RegistrosAretornar = append(RegistrosAretornar, registro)
 			}
 		}
 		paginaAtual = paginaAtual.prox
 	}
 
-	return valoresAretornar
+	log = "Número de registros encontrados: " + strconv.Itoa(len(RegistrosAretornar))
+
+	return RegistrosAretornar, log
 }
 
 func main() {
 	var esp_livre_paginas []int
 	var paginas_utilizadas []*Pagina
 	//vector created to test scan
-	var conteudoregistros []string
-
+	
 	DB_PATH := "db"
 	QUANT_PAGINAS := 20
 	QUANT_BYTES_POR_PAGINA := 5
@@ -403,16 +419,10 @@ func main() {
 	esp_livre_paginas, paginas_utilizadas = conectar_db(DB_PATH, QUANT_PAGINAS, QUANT_BYTES_POR_PAGINA)
 
 	inserir_registro(DB_PATH, &paginas_utilizadas, esp_livre_paginas)
-
-	fmt.Println("Fazendo scan...")
-
-	conteudoregistros = scan(paginas_utilizadas)
-
-	fmt.Println("Printar os registros encontrados")
-
-	for _, registro := range conteudoregistros {
-		fmt.Println(registro)
-	}
+	inserir_registro(DB_PATH, &paginas_utilizadas, esp_livre_paginas)
+	inserir_registro(DB_PATH, &paginas_utilizadas, esp_livre_paginas)
+	inserir_registro(DB_PATH, &paginas_utilizadas, esp_livre_paginas)
+	inserir_registro(DB_PATH, &paginas_utilizadas, esp_livre_paginas)
 
 	/* fmt.Println(esp_livre_paginas)
 

@@ -348,9 +348,29 @@ func inserir_registro(db_path string, paginas_utilizadas *[]*Pagina, esp_livre_p
 
 }
 
+func scan(paginas_ativas []*Pagina) []string {
+	var RegistrosEncontrados []string
+
+	paginaAtual := paginas_ativas[0]
+
+	for {
+		if paginaAtual == nil {
+			break
+		}
+		for _, registro := range paginaAtual.registros {
+			RegistrosEncontrados = append(RegistrosEncontrados, registro.conteudo)
+		}
+		paginaAtual = paginaAtual.prox
+	}
+
+	return RegistrosEncontrados
+}
+
 func main() {
 	var esp_livre_paginas []int
 	var paginas_utilizadas []*Pagina
+	//vector created to test scan
+	var conteudoregistros []string
 
 	DB_PATH := "db"
 	QUANT_PAGINAS := 20
@@ -362,7 +382,19 @@ func main() {
 
 	esp_livre_paginas, paginas_utilizadas = conectar_db(DB_PATH, QUANT_PAGINAS, QUANT_BYTES_POR_PAGINA)
 
-	fmt.Println(esp_livre_paginas)
+	inserir_registro(DB_PATH, &paginas_utilizadas, esp_livre_paginas)
+
+	fmt.Println("Fazendo scan...")
+
+	conteudoregistros = scan(paginas_utilizadas)
+
+	fmt.Println("Printar os registros encontrados")
+
+	for _, registro := range conteudoregistros {
+		fmt.Println(registro)
+	}
+
+	/* fmt.Println(esp_livre_paginas)
 
 	for _, i := range paginas_utilizadas {
 		fmt.Println(i.id)
@@ -370,7 +402,7 @@ func main() {
 		for _, reg := range i.registros {
 			fmt.Println(reg.conteudo)
 		}
-	}
+	} */
 
 	inserir_registro(DB_PATH, &paginas_utilizadas, esp_livre_paginas)
 

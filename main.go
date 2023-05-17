@@ -403,6 +403,33 @@ func seek(paginas_ativas *[]*Pagina, valor_a_pesquisar string) ([]*Registro, str
 	return RegistrosAretornar, log
 }
 
+func delete (paginas_ativas *[]*Pagina, valor_a_pesquisar string) string {
+	var registrosAdeletar []*Registro
+	var log string
+
+	registrosAdeletar, log = seek(paginas_ativas, valor_a_pesquisar)
+
+	if log == "Nenhum registro encontrado" {
+		return log
+	}
+
+	for _, registro := range registrosAdeletar {
+		for _, pagina := range *paginas_ativas {
+			if (*pagina).id == registro.pagina_id {
+					for indexRegistro, registroPag := range (*pagina).registros {
+						if registroPag.slot == registro.slot {
+							(*pagina).registros[indexRegistro] = (*pagina).registros[len((*pagina).registros)-1]
+							(*pagina).registros = (*pagina).registros[:len((*pagina).registros)-1]
+						}
+					}
+				break
+			}
+		}
+	}
+
+	return "Regristros deletados com sucesso"
+}
+
 func main() {
 	var esp_livre_paginas []int
 	var paginas_utilizadas []*Pagina

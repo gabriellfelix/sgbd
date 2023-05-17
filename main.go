@@ -293,7 +293,9 @@ func inserir_registro(db_path string, paginas_utilizadas *[]*Pagina, esp_livre_p
 					prox:      nil,
 				}
 
-				(*paginas_utilizadas)[len(*paginas_utilizadas)-1].prox = &pagina
+				if len(*paginas_utilizadas) != 0 {
+					(*paginas_utilizadas)[len(*paginas_utilizadas)-1].prox = &pagina
+				}
 
 				*paginas_utilizadas = append(*paginas_utilizadas, &pagina)
 

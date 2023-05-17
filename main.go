@@ -364,6 +364,26 @@ func scan(paginas_ativas []*Pagina) []string {
 	return RegistrosEncontrados
 }
 
+func seek(paginas_ativas []*Pagina, valor_a_pesquisar string) []*Registro {
+	var valoresAretornar []*Registro
+
+	paginaAtual := paginas_ativas[0]
+
+	for {
+		if paginaAtual == nil {
+			break
+		}
+		for _, registro := range paginaAtual.registros {
+			if registro.conteudo == valor_a_pesquisar {
+				valoresAretornar = append(valoresAretornar, registro)
+			}
+		}
+		paginaAtual = paginaAtual.prox
+	}
+
+	return valoresAretornar
+}
+
 func main() {
 	var esp_livre_paginas []int
 	var paginas_utilizadas []*Pagina

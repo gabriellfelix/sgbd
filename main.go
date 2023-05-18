@@ -72,7 +72,6 @@ func criar_db(db_path string, quant_paginas int, quant_bytes_por_pagina int) []i
 		vetor_ocup[idx] = -1
 	}
 
-
 	for i := 0; i < quant_paginas; i++ {
 		gravar_conteudo_pagina(db_path, i, vetor_ocup, empty_string)
 	}
@@ -130,17 +129,17 @@ func ler_esp_livre_paginas(db_path string) []int {
 
 }
 
-func gravar_conteudo_pagina(db_path string, pagina_id int, slots []int, registros []string){
-	fmt.Println("slots",slots)
+func gravar_conteudo_pagina(db_path string, pagina_id int, slots []int, registros []string) {
+	fmt.Println("slots", slots)
 
 	path_comp := db_path + "/" + strconv.Itoa(pagina_id) + ".txt"
 
 	string_vetor_slots := strings.Join(strings.Fields(fmt.Sprint(slots)), " ")
 
-	string_vetor_comp := string_vetor_slots[1:len(string_vetor_slots)-1]
+	string_vetor_comp := string_vetor_slots[1 : len(string_vetor_slots)-1]
 	string_vetor_comp += "\n"
 
-	for idx, _ := range registros{
+	for idx, _ := range registros {
 		string_vetor_comp += registros[idx]
 		string_vetor_comp += "\n"
 	}
@@ -375,7 +374,7 @@ func scan(paginas_ativas *[]*Pagina) ([]*Registro, string) {
 		log = "Nenhum registro encontrado"
 		return RegistrosEncontrados, log
 	}
-	
+
 	paginaAtual := (*paginas_ativas)[0]
 
 	for {
@@ -404,7 +403,6 @@ func seek(paginas_ativas *[]*Pagina, valor_a_pesquisar string) ([]*Registro, str
 
 	paginaAtual := (*paginas_ativas)[0]
 
-
 	for {
 		if paginaAtual == nil {
 			break
@@ -425,80 +423,92 @@ func seek(paginas_ativas *[]*Pagina, valor_a_pesquisar string) ([]*Registro, str
 func delete(db_path string, paginas_ativas *[]*Pagina, espaco_livre_paginas []int, valor_a_pesquisar string) string {
 	var registrosAdeletar []*Registro
 	var log string
-	
-	registrosAdeletar, log = seek(paginas_ativas, valor_a_pesquisar)
 
+	registrosAdeletar, log = seek(paginas_ativas, valor_a_pesquisar)
 
 	if log == "Nenhum registro encontrado" {
 		return log
 	}
 
 	for _, registro := range registrosAdeletar {
-		
+		fmt.Println("O REGISTRO É ====")
+		fmt.Println(registro)
 		for indexPagina, pagina := range *paginas_ativas {
-			
-			
+			fmt.Println("ESTOU NA PAGINA DE INDEX ===")
+			fmt.Println(indexPagina)
+			fmt.Println("=======================")
+			fmt.Println(pagina)
 			if (*pagina).id == registro.pagina_id {
 
-					index := 0
-					tamanhoLista := len((*pagina).registros)
-					for { 
-						if index == tamanhoLista {
+				fmt.Println("ENCONTREI A PAGINA DO REGISTRO ====")
+				fmt.Println("É A PAGINA DE INDEX ===")
+				fmt.Println(indexPagina)
+
+				index := 0
+				tamanhoLista := len((*pagina).registros)
+				fmt.Println("PEGUEI A LISTA DE REGISTROS DA PÁGINA")
+				for {
+					if index >= tamanhoLista {
+						break
+					}
+					fmt.Println("AAAAAAAAA")
+					if (*pagina).registros[index].slot == registro.slot {
+						fmt.Println("CONTEUDO DO REGISTRO ENCONTRADO")
+						fmt.Println((*pagina).registros[index].conteudo)
+						fmt.Println("=================")
+						(*pagina).registros[index] = (*pagina).registros[len((*pagina).registros)-1]
+						(*pagina).registros = (*pagina).registros[:len((*pagina).registros)-1]
+						fmt.Println("aaaaaaaskdjhasjdhaksjdaaa")
+
+					}
+
+					tamanhoLista = len((*pagina).registros)
+					fmt.Println("TAMANHO DA LISTA DE REGI APÓS A REMOÇÃO")
+					fmt.Println(tamanhoLista)
+					fmt.Println("==============================")
+					index += 1
+				}
+
+				fmt.Println("ESPAÇO LIVRE ANTES ")
+				fmt.Println(espaco_livre_paginas[indexPagina])
+				fmt.Println("TAMANHO DO REGISTRO ")
+				fmt.Println(registro.tamanho)
+				fmt.Println("ESPAÇO LIVRE DEPOIS")
+				espaco_livre_paginas[indexPagina] += registro.tamanho
+				fmt.Println(espaco_livre_paginas[indexPagina])
+
+				if espaco_livre_paginas[indexPagina] >= 5 {
+					/* (*paginas_ativas)[indexPagina] = (*paginas_ativas)[len(*paginas_ativas)]
+					*paginas_ativas = (*paginas_ativas)[:len(*(paginas_ativas))] */
+
+					(*paginas_ativas)[indexPagina] = (*paginas_ativas)[len(*paginas_ativas)-1]
+					*paginas_ativas = (*paginas_ativas)[:len(*(paginas_ativas))-1]
+
+					fmt.Println("TAMANHO DA LISTA DE PAGINAS ATIVAS APOS A REMOÇÃO")
+					fmt.Println(len(*paginas_ativas))
+
+					/* paginaAtual := (*paginas_ativas)[0]
+
+					for {
+						if paginaAtual == nil {
 							break
 						}
-						fmt.Println("AAAAAAAAA")
-						if (*pagina).registros[index].slot == registro.slot {
-							(*pagina).registros[index] = (*pagina).registros[len((*pagina).registros)-1]
-							(*pagina).registros = (*pagina).registros[:len((*pagina).registros)-1]
-							fmt.Println("aaaaaaaskdjhasjdhaksjdaaa")
-							index -= 1
-						}
-						
-						tamanhoLista = len((*pagina).registros)
-						index += 1;
-					}
-					
-					fmt.Println("BBBBBBasdasdsdasda")
+						if (*paginaAtual).prox == pagina {
 
-					/* for indexRegistro, registroPag := range (*pagina).registros {
-						fmt.Println("Index regis")
-						fmt.Println(indexRegistro)
-						if registroPag.slot == registro.slot {
-							(*pagina).registros[indexRegistro] = (*pagina).registros[len((*pagina).registros)-1]
-							fmt.Println("aaaaaaaskdjhasjdhaksjdaaa")
-							fmt.Println("Index regis")
-						fmt.Println(indexRegistro)
-						fmt.Println(registro)
-							(*pagina).registros = (*pagina).registros[:len((*pagina).registros)-1]
-							
-							
+							(*paginaAtual).prox = pagina.prox
+							break
 						}
-						
+						paginaAtual = paginaAtual.prox
 					} */
-					espaco_livre_paginas[indexPagina] += registro.tamanho;
-					gravar_esp_livre_paginas(db_path,espaco_livre_paginas)
-					if espaco_livre_paginas[indexPagina] == 5 {
-						(*paginas_ativas)[indexPagina] = (*paginas_ativas)[len(*paginas_ativas)]
-						*paginas_ativas = (*paginas_ativas)[:len(*(paginas_ativas))];
-						
-						paginaAtual := (*paginas_ativas)[0]
 
-						for {
-							if paginaAtual == nil {
-								break
-							}
-							if (*paginaAtual).prox == pagina {
-								
-								(*paginaAtual).prox = pagina.prox
-								break
-							}
-							paginaAtual = paginaAtual.prox
-						}
-
-					}
-					
+					fmt.Println("VOU LER A PÁGINA DO DISCO")
 
 					vetorSlots, vetorRegistros := ler_conteudo_pagina(db_path, (*pagina).id)
+					fmt.Println("=============================")
+					fmt.Println("PRINTAR O VETOR DE SLOTS")
+					for _, i := range vetorSlots {
+						fmt.Println(i)
+					}
 
 					for _, slot := range vetorSlots {
 						if registro.slot == slot {
@@ -506,12 +516,12 @@ func delete(db_path string, paginas_ativas *[]*Pagina, espaco_livre_paginas []in
 						}
 					}
 
-					
-					fmt.Println("VOu escrever na paǵiang")
+					fmt.Println("Vou escrever na página")
 
 					gravar_conteudo_pagina(db_path, (*pagina).id, vetorSlots, vetorRegistros)
 
-					
+				}
+
 				break
 			}
 		}
@@ -524,7 +534,7 @@ func main() {
 	var esp_livre_paginas []int
 	var paginas_utilizadas []*Pagina
 	//vector created to test scan
-	
+
 	DB_PATH := "db"
 	QUANT_PAGINAS := 20
 	QUANT_BYTES_POR_PAGINA := 5
@@ -535,11 +545,11 @@ func main() {
 
 	esp_livre_paginas, paginas_utilizadas = conectar_db(DB_PATH, QUANT_PAGINAS, QUANT_BYTES_POR_PAGINA)
 
-/* 	inserir_registro(DB_PATH, &paginas_utilizadas, esp_livre_paginas)
 	inserir_registro(DB_PATH, &paginas_utilizadas, esp_livre_paginas)
 	inserir_registro(DB_PATH, &paginas_utilizadas, esp_livre_paginas)
-	inserir_registro(DB_PATH, &paginas_utilizadas, esp_livre_paginas)
-	inserir_registro(DB_PATH, &paginas_utilizadas, esp_livre_paginas) */
+	/*	inserir_registro(DB_PATH, &paginas_utilizadas, esp_livre_paginas)
+		inserir_registro(DB_PATH, &paginas_utilizadas, esp_livre_paginas)
+		inserir_registro(DB_PATH, &paginas_utilizadas, esp_livre_paginas) */
 
 	fmt.Println("Fazendo scan")
 
@@ -553,7 +563,7 @@ func main() {
 
 	fmt.Println("Fazendo o delete")
 
-	delete(DB_PATH, &paginas_utilizadas, esp_livre_paginas, "teste")
+	delete(DB_PATH, &paginas_utilizadas, esp_livre_paginas, "breno")
 
 	fmt.Println("Fazendo scan após delete")
 

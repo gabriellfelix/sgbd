@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/binary"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -403,9 +404,11 @@ func seek(paginas_ativas *[]*Pagina, valor_a_pesquisar string) ([]*Registro, str
 	return RegistrosAretornar, log
 }
 
-func delete (paginas_ativas *[]*Pagina, valor_a_pesquisar string) string {
+func delete (db_path string, paginas_ativas *[]*Pagina, espaco_livre_paginas []int, valor_a_pesquisar string) string {
 	var registrosAdeletar []*Registro
 	var log string
+	var path_pg string
+	var vetorSlots []binary
 
 	registrosAdeletar, log = seek(paginas_ativas, valor_a_pesquisar)
 
@@ -414,7 +417,7 @@ func delete (paginas_ativas *[]*Pagina, valor_a_pesquisar string) string {
 	}
 
 	for _, registro := range registrosAdeletar {
-		for _, pagina := range *paginas_ativas {
+		for indexPagina, pagina := range *paginas_ativas {
 			if (*pagina).id == registro.pagina_id {
 					for indexRegistro, registroPag := range (*pagina).registros {
 						if registroPag.slot == registro.slot {
@@ -422,6 +425,26 @@ func delete (paginas_ativas *[]*Pagina, valor_a_pesquisar string) string {
 							(*pagina).registros = (*pagina).registros[:len((*pagina).registros)-1]
 						}
 					}
+					espaco_livre_paginas[indexPagina] += registro.tamanho;
+					if espaco_livre_paginas[indexPagina] == 5 {
+						(*paginas_ativas)[indexPagina] = (*paginas_ativas)[len(*paginas_ativas)]
+						*paginas_ativas = (*paginas_ativas)[:len(*(paginas_ativas))];
+					}
+					path_pg = db_path + "/" + strconv.Itoa((*pagina).id) + ".txt"
+
+					vetor_bin, _ := ioutil.ReadFile(path_pg)
+
+					vetorSlots = vetor_bin[0]
+
+					for indSlot, range := vetorvetorSlots {
+						if registro.slot == indSlot {
+							
+						}
+					}
+					
+
+
+					
 				break
 			}
 		}

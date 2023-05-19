@@ -19,7 +19,6 @@ type Pagina struct {
 	id        int
 	registros []*Registro
 	prox      *Pagina
-	// esp_disp  int
 }
 
 func conectar_db(db_path string, quant_paginas int, quant_bytes_por_pagina int) ([]int, []*Pagina) {
@@ -52,7 +51,7 @@ func conectar_db(db_path string, quant_paginas int, quant_bytes_por_pagina int) 
 			}
 		}
 
-		paginas = criar_paginas(db_path, paginas_ativas)
+		paginas = criar_paginas(db_path, paginas_ativas, quant_bytes_por_pagina)
 
 		fmt.Println("Banco de Dados Encontrado...")
 	}
@@ -130,7 +129,7 @@ func ler_esp_livre_paginas(db_path string) []int {
 }
 
 func gravar_conteudo_pagina(db_path string, pagina_id int, slots []int, registros []string) {
-	fmt.Println("slots", slots)
+	// fmt.Println("slots", slots)
 
 	path_comp := db_path + "/" + strconv.Itoa(pagina_id) + ".txt"
 
@@ -151,8 +150,10 @@ func gravar_conteudo_pagina(db_path string, pagina_id int, slots []int, registro
 	}
 }
 
-func ler_conteudo_pagina(db_path string, pagina_id int) ([]int, []string) {
+func ler_conteudo_pagina(db_path string, pagina_id int, quant_bytes_por_pagina int) ([]int, []string) {
 	var ocupacao []int
+
+	registros := make([]string, quant_bytes_por_pagina)
 
 	path_pg := db_path + "/" + strconv.Itoa(pagina_id) + ".txt"
 
@@ -165,17 +166,22 @@ func ler_conteudo_pagina(db_path string, pagina_id int) ([]int, []string) {
 	vetor_string := string(vetor_bin)
 	valores := strings.FieldsFunc(vetor_string, spl)
 
-	for i := 0; i < 5; i++ {
+	for i := 0; i < quant_bytes_por_pagina; i++ {
 		val_ocup, _ := strconv.Atoi(valores[i])
 		ocupacao = append(ocupacao, val_ocup)
 	}
 
-	registros := valores[5:]
+	// fmt.Println(len(valores))
+	// fmt.Println(valores)
+
+	for i := 0; i < len(valores)-quant_bytes_por_pagina; i++ {
+		registros[i] = valores[quant_bytes_por_pagina+i]
+	}
 
 	return ocupacao, registros
 }
 
-func ler_registros_mem(db_path string, pagina int) []*Registro {
+func ler_registros_mem(db_path string, pagina int, quant_bytes_por_pagina int) []*Registro {
 
 	var registros []*Registro
 	var ocupacao []int
@@ -183,7 +189,7 @@ func ler_registros_mem(db_path string, pagina int) []*Registro {
 	valor_registro := ""
 	tamanho_registro := 0
 
-	ocupacao, valores_registros = ler_conteudo_pagina(db_path, pagina)
+	ocupacao, valores_registros = ler_conteudo_pagina(db_path, pagina, quant_bytes_por_pagina)
 
 	for idx, _ := range ocupacao {
 
@@ -212,13 +218,12 @@ func ler_registros_mem(db_path string, pagina int) []*Registro {
 
 }
 
-func criar_paginas(db_path string, paginas_ativas []int) []*Pagina {
+func criar_paginas(db_path string, paginas_ativas []int, quant_bytes_por_pagina int) []*Pagina {
 
 	var paginas []*Pagina
 
 	for idx, _ := range paginas_ativas {
-		registros_pg := ler_registros_mem(db_path, paginas_ativas[idx])
-		fmt.Println(registros_pg)
+		registros_pg := ler_registros_mem(db_path, paginas_ativas[idx], quant_bytes_por_pagina)
 
 		pagina := Pagina{
 			id:        paginas_ativas[idx],
@@ -229,34 +234,35 @@ func criar_paginas(db_path string, paginas_ativas []int) []*Pagina {
 		paginas = append(paginas, &pagina)
 	}
 
-	for i := (len(paginas) - 1); i > 1; i-- {
-		paginas[i-1].prox = paginas[i]
+	for i := 0; i < (len(paginas) - 1); i++ {
+		paginas[i].prox = paginas[i+1]
 	}
 
 	return paginas
 }
 
-func inserir_registro(db_path string, paginas_utilizadas *[]*Pagina, esp_livre_paginas []int) {
+func insert(db_path string, paginas_utilizadas *[]*Pagina, esp_livre_paginas []int, quant_bytes_por_pagina int) {
 	var registro_string string
 
 	for {
-		fmt.Println("Digite o Registro_string: ")
+		fmt.Println("Digite o Registro: ")
 		fmt.Scan(&registro_string)
 
-		if !(len(registro_string) > 5) {
+		if !(len(registro_string) > quant_bytes_por_pagina) {
 			break
 		} else {
 			registro_string = ""
-			fmt.Println("O Tamanho Máximo do Registro é de 5 Bytes")
+			fmt.Println("O Tamanho Máximo do Registro é de %d Bytes", quant_bytes_por_pagina)
 		}
 	}
 
 	quant_vazios := 0
 	slot_gravacao := -1
+	pagina_gravacao := -1
 
 	for _, pg_ativa := range *paginas_utilizadas {
 		if esp_livre_paginas[pg_ativa.id] >= len(registro_string) {
-			ocupacao_slots, _ := ler_conteudo_pagina(db_path, pg_ativa.id)
+			ocupacao_slots, _ := ler_conteudo_pagina(db_path, pg_ativa.id, quant_bytes_por_pagina)
 
 			for i := 0; i < len(ocupacao_slots); i++ {
 				if ocupacao_slots[i] == -1 {
@@ -278,10 +284,10 @@ func inserir_registro(db_path string, paginas_utilizadas *[]*Pagina, esp_livre_p
 					conteudo:  registro_string,
 				}
 
+				pagina_gravacao = pg_ativa.id
+
 				pg_ativa.registros = append(pg_ativa.registros, &registro)
 
-				fmt.Println("pagina", pg_ativa.id)
-				fmt.Println("slot", slot_gravacao)
 				break
 			}
 
@@ -291,7 +297,7 @@ func inserir_registro(db_path string, paginas_utilizadas *[]*Pagina, esp_livre_p
 
 	if slot_gravacao == -1 {
 		for idx, _ := range esp_livre_paginas {
-			if esp_livre_paginas[idx] == 5 {
+			if esp_livre_paginas[idx] == quant_bytes_por_pagina {
 				slot_gravacao = 0
 
 				registro := Registro{
@@ -311,13 +317,13 @@ func inserir_registro(db_path string, paginas_utilizadas *[]*Pagina, esp_livre_p
 					prox:      nil,
 				}
 
+				pagina_gravacao = idx
+
 				if len(*paginas_utilizadas) != 0 {
 					(*paginas_utilizadas)[len(*paginas_utilizadas)-1].prox = &pagina
 				}
 
 				*paginas_utilizadas = append(*paginas_utilizadas, &pagina)
-
-				fmt.Println("pagina ", registro.pagina_id)
 
 				break
 			}
@@ -325,44 +331,26 @@ func inserir_registro(db_path string, paginas_utilizadas *[]*Pagina, esp_livre_p
 	}
 
 	if slot_gravacao == -1 {
+
 		fmt.Println("Banco de Dados Cheio!!")
+
+	} else {
+
+		vetorSlots, vetorRegistros := ler_conteudo_pagina(db_path, pagina_gravacao, quant_bytes_por_pagina)
+
+		vetor_registro_string := strings.Split(registro_string, "")
+
+		for i := 0; i < len(registro_string); i++ {
+			vetorSlots[slot_gravacao+i] = slot_gravacao
+			vetorRegistros[slot_gravacao+i] = vetor_registro_string[i]
+		}
+
+		esp_livre_paginas[pagina_gravacao] -= len(registro_string)
+
+		gravar_conteudo_pagina(db_path, pagina_gravacao, vetorSlots, vetorRegistros)
+		gravar_esp_livre_paginas(db_path, esp_livre_paginas)
+
 	}
-
-	// for i := 0; i < len(enderecos); i++ {
-	// 	if enderecos[i] == -1 {
-	// 		quant_vazios += 1
-	// 		if quant_vazios == len(registro) {
-	// 			path := db_path + "/" + strconv.Itoa(i/quant_bytes_por_pagina) + ".txt"
-
-	// 			pagina := i / quant_bytes_por_pagina
-	// 			slot := (i % quant_bytes_por_pagina) + 1 - len(registro)
-
-	// 			fmt.Println(fmt.Sprintf("Página %d, Slot %d", pagina, slot))
-
-	// 			string_vetor := ""
-	// 			for idx, letra := range registro {
-	// 				pos_end := pagina*quant_bytes_por_pagina + slot + idx
-
-	// 				// fmt.Println("pos ",pos_end)
-
-	// 				string_vetor += string(letra) + "\n"
-
-	// 				enderecos[pos_end] = slot
-	// 			}
-
-	// 			gravar_esp_livre_paginas(db_path, enderecos)
-	// 			fmt.Println("enderecos ", enderecos)
-
-	// 			arquivo, _ := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0664)
-
-	// 			arquivo.WriteString(string_vetor)
-
-	// 			// ioutil.WriteFile(path, []byte(string_vetor), 0644)
-
-	// 		}
-	// 	} else {
-	// 		quant_vazios = 0
-	// 	}
 
 }
 
@@ -420,7 +408,7 @@ func seek(paginas_ativas *[]*Pagina, valor_a_pesquisar string) ([]*Registro, str
 	return RegistrosAretornar, log
 }
 
-func delete(db_path string, paginas_ativas *[]*Pagina, espaco_livre_paginas []int, valor_a_pesquisar string) string {
+func delete(db_path string, paginas_ativas *[]*Pagina, espaco_livre_paginas []int, valor_a_pesquisar string, quant_bytes_por_pagina int) string {
 	var registrosAdeletar []*Registro
 	var log string
 
@@ -479,7 +467,9 @@ func delete(db_path string, paginas_ativas *[]*Pagina, espaco_livre_paginas []in
 				espaco_livre_paginas[indexPagina] += registro.tamanho
 				fmt.Println(espaco_livre_paginas[indexPagina])
 
-				if espaco_livre_paginas[indexPagina] >= 5 {
+				gravar_esp_livre_paginas(db_path, espaco_livre_paginas)
+
+				if espaco_livre_paginas[indexPagina] == quant_bytes_por_pagina {
 					/* (*paginas_ativas)[indexPagina] = (*paginas_ativas)[len(*paginas_ativas)]
 					*paginas_ativas = (*paginas_ativas)[:len(*(paginas_ativas))] */
 
@@ -505,17 +495,15 @@ func delete(db_path string, paginas_ativas *[]*Pagina, espaco_livre_paginas []in
 
 					fmt.Println("VOU LER A PÁGINA DO DISCO")
 
-					vetorSlots, vetorRegistros := ler_conteudo_pagina(db_path, (*pagina).id)
+					vetorSlots, vetorRegistros := ler_conteudo_pagina(db_path, (*pagina).id, quant_bytes_por_pagina)
 					fmt.Println("=============================")
 					fmt.Println("PRINTAR O VETOR DE SLOTS")
 					for _, i := range vetorSlots {
 						fmt.Println(i)
 					}
 
-					for _, slot := range vetorSlots {
-						if registro.slot == slot {
-							vetorSlots[slot] = -1
-						}
+					for i := 0; i < registro.tamanho; i++ {
+						vetorSlots[registro.slot+i] = -1
 					}
 
 					fmt.Println("Vou escrever na página")
@@ -547,17 +535,16 @@ func main() {
 
 	esp_livre_paginas, paginas_utilizadas = conectar_db(DB_PATH, QUANT_PAGINAS, QUANT_BYTES_POR_PAGINA)
 
-	inserir_registro(DB_PATH, &paginas_utilizadas, esp_livre_paginas)
-	inserir_registro(DB_PATH, &paginas_utilizadas, esp_livre_paginas)
-	/*	inserir_registro(DB_PATH, &paginas_utilizadas, esp_livre_paginas)
-		inserir_registro(DB_PATH, &paginas_utilizadas, esp_livre_paginas)
-		inserir_registro(DB_PATH, &paginas_utilizadas, esp_livre_paginas) */
+	// insert(DB_PATH, &paginas_utilizadas, esp_livre_paginas, QUANT_BYTES_POR_PAGINA)
+	// insert(DB_PATH, &paginas_utilizadas, esp_livre_paginas, QUANT_BYTES_POR_PAGINA)
+	// insert(DB_PATH, &paginas_utilizadas, esp_livre_paginas, QUANT_BYTES_POR_PAGINA)
+	// insert(DB_PATH, &paginas_utilizadas, esp_livre_paginas, QUANT_BYTES_POR_PAGINA)
 
 	fmt.Println("Fazendo scan")
 
 	registros, log := scan(&paginas_utilizadas)
 
-	fmt.Print(log)
+	fmt.Println(log)
 
 	for _, regi := range registros {
 		fmt.Println(regi)
@@ -565,13 +552,15 @@ func main() {
 
 	fmt.Println("Fazendo o delete")
 
-	delete(DB_PATH, &paginas_utilizadas, esp_livre_paginas, "breno")
+	delete(DB_PATH, &paginas_utilizadas, esp_livre_paginas, "haha", QUANT_BYTES_POR_PAGINA)
 
 	fmt.Println("Fazendo scan após delete")
 
 	registros2, log2 := scan(&paginas_utilizadas)
 
 	fmt.Print(log2)
+
+	insert(DB_PATH, &paginas_utilizadas, esp_livre_paginas, QUANT_BYTES_POR_PAGINA)
 
 	for i := range registros2 {
 		fmt.Println(i)
@@ -587,27 +576,13 @@ func main() {
 		}
 	} */
 
-	inserir_registro(DB_PATH, &paginas_utilizadas, esp_livre_paginas)
-
 	for _, i := range paginas_utilizadas {
 		fmt.Println(i.id)
 
 		for _, reg := range i.registros {
+			fmt.Print(len(reg.conteudo), " ")
 			fmt.Println(reg.conteudo)
 		}
 	}
 
 }
-
-/*
-
-b
-
-b
-
-
-
-
-
-
-*/

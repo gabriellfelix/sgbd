@@ -460,13 +460,15 @@ func delete(db_path string, paginas_ativas *[]*Pagina, espaco_livre_paginas []in
 						(*pagina).registros = (*pagina).registros[:len((*pagina).registros)-1]
 						fmt.Println("aaaaaaaskdjhasjdhaksjdaaa")
 
+					} else {
+						index += 1
 					}
 
 					tamanhoLista = len((*pagina).registros)
 					fmt.Println("TAMANHO DA LISTA DE REGI APÓS A REMOÇÃO")
 					fmt.Println(tamanhoLista)
 					fmt.Println("==============================")
-					index += 1
+
 				}
 
 				fmt.Println("ESPAÇO LIVRE ANTES ")
@@ -596,3 +598,16 @@ func main() {
 	}
 
 }
+
+/*
+
+b
+
+b
+
+
+
+
+
+
+*/

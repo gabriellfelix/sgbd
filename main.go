@@ -450,6 +450,20 @@ func delete(db_path string, paginas_ativas *[]*Pagina, espaco_livre_paginas []in
 					(*paginas_ativas)[indexPagina] = (*paginas_ativas)[len(*paginas_ativas)-1]
 					*paginas_ativas = (*paginas_ativas)[:len(*(paginas_ativas))-1]
 
+					paginaAtual := (*paginas_ativas)[0]
+
+					for {
+						if paginaAtual == nil {
+							break
+						}
+						if (*paginaAtual).prox == pagina {
+
+							(*paginaAtual).prox = pagina.prox
+							break
+						}
+						paginaAtual = paginaAtual.prox
+					}
+
 					vetorSlots, vetorRegistros := ler_conteudo_pagina(db_path, (*pagina).id, quant_bytes_por_pagina)
 
 					for i := 0; i < registro.tamanho; i++ {
@@ -524,6 +538,5 @@ func main() {
 		}
 
 	}
-
 
 }
